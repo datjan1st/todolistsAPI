@@ -1,12 +1,15 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
-namespace todolistsAPI.Database
+namespace todolistsAPI.Entities
 {
-    public class Users
+    public class User
     {
         [Key]
         public int UserId { get; set; }
         public string UserName { get; set; } = string.Empty;
-        public List<TodoList> todoLists { get; set; }
+        
+        [JsonIgnore]
+        public List<TodoList> TodoLists { get; set; }
     }
 }

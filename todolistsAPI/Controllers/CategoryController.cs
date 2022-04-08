@@ -1,9 +1,7 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
-using todolistsAPI.Database;
-using todolistsAPI.DataCntxt;
+using todolistsAPI.Entities;
+using todolistsAPI.Data;
 using todolistsAPI.DTOs;
 
 
@@ -13,87 +11,129 @@ namespace todolistsAPI.Controllers
     [ApiController]
     public class CategoryController : ControllerBase
     {
-        private readonly dataContext _context;
+        private readonly DataContext _context;
 
-        public CategoryController(dataContext context)
+        public CategoryController(DataContext context)
         {
             _context = context;
         }
         [HttpGet]
-        public ActionResult<List<Category>> Get()
+        public async Task<IActionResult> Get([FromQuery] string? name)
         {
-            var GetAllLists = (from c in _context.category
-                               join t in _context.todoList on c.CategoryName equals t.CategoryName
-                               select new
-                               {
-                                   c.CategoryName,
-                                   t.TodoListId,
-                                   t.UserId,
-                                   t.TaskId,
-                                   t.Title,
-                                   t.Status,
-                                   t.Description
-                               }
-                ).ToList();
-            return Ok(GetAllLists);
-        }
+            var query = _context.Category
+                .Include(x => x.TodoLists)
+                .AsQueryable();
 
-        [HttpGet("GetCategoryByI/{categoryId}")]
-        public async Task<ActionResult<List<Category>>> GetbyCategoryId(int categoryId)
-        {
-            var GetCategoryById = await _context.category
-                .Where(u => u.CategoryId == categoryId)
-                .Include(u => u.TodoList)
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                query = query.Where(x => x.CategoryName.Contains(name));
+            }
+
+            var items = await query
+                .Select(c => new CategoryResponseDTO
+                {
+                    CategoryId = c.CategoryId,
+                    CategoryName = c.CategoryName,
+                    TodoListDTOs = c.TodoLists.Select(t => new TodoListResponseDTO
+                    {
+                        Description = t.Description,
+                        Number = t.Number,
+                        Status = t.Status,
+                        TaskId = t.TaskId,
+                        Title = t.Title,
+                        TodoListId = t.TodoListId,
+                        UserId = t.UserId
+                    }).ToList()
+                })
                 .ToListAsync();
-            if (GetCategoryById == null)
-                return BadRequest("Category id not found.");
-            return Ok(GetCategoryById);
+            return Ok(items);
         }
 
-        [HttpGet("GetbyCategoryName/{categoryName}")]
-        public async Task<ActionResult<List<Category>>> GetbyCategoryName(string categoryName)
+        [HttpGet("{categoryId}")]
+        public async Task<IActionResult> GetById(int categoryId)
         {
-            var GetCategoryByName = _context.todoList.Where(u => u.CategoryName == categoryName).ToList();
-            return Ok(GetCategoryByName);
+            var category = await _context.Category
+                .Include(u => u.TodoLists)
+                .Where(u => u.CategoryId == categoryId)
+                .FirstOrDefaultAsync();
+            if (category == null)
+                return BadRequest("Category id not found.");
+
+            return Ok(new CategoryResponseDTO
+            {
+                CategoryId = categoryId,
+                CategoryName = category.CategoryName,
+                TodoListDTOs = category.TodoLists.Select(t => new TodoListResponseDTO
+                {
+                    Description = t.Description,
+                    Number = t.Number,
+                    Status = t.Status,
+                    TaskId = t.TaskId,
+                    Title = t.Title,
+                    TodoListId = t.TodoListId,
+                    UserId = t.UserId
+                }).ToList()
+            });
         }
 
         [HttpPost]
-        public async Task<ActionResult<Category>> addnewcategory(CategoryDTO newCategory)
+        public async Task<ActionResult<Category>> Create(CategoryRequestDTO categoryRequestDTO)
         {
-            var AddNewCategory = new Category()
+            var categoryToCreate = new Category()
             {
-                CategoryName = newCategory.CategoryName
+                CategoryName = categoryRequestDTO.CategoryName
             };
-            _context.category.Add(AddNewCategory);
-            await _context.SaveChangesAsync();
-            return Ok(AddNewCategory);
-        }
 
-        [HttpDelete("{deleteCategory}")]
-        public async Task<ActionResult<List<Category>>> deleteCategory(int deleteCategory)
-        {
-            
-            var DeleteCategory = await _context.category.FindAsync(deleteCategory);
-            if (DeleteCategory == null)
-                return BadRequest("Category not found.");
-            _context.category.Remove(DeleteCategory);
+            _context.Category.Add(categoryToCreate);
             await _context.SaveChangesAsync();
-            return Ok(await _context.category.ToListAsync());
-
+            return Ok(new CategoryResponseDTO
+            {
+                CategoryId = categoryToCreate.CategoryId,
+                CategoryName = categoryToCreate.CategoryName
+            });
         }
 
         [HttpPut]
-        public async Task<ActionResult<List<Category>>> UpdateCategory(CategoryDTO UpdateCategory)
+        public async Task<IActionResult> Update(CategoryRequestDTO categoryRequestDTO)
         {
 
-            var updateCategory = await _context.category.FindAsync(UpdateCategory.CategoryId);
-            if (updateCategory == null)
+            var categoryToUpdate = await _context.Category.FindAsync(categoryRequestDTO.CategoryId);
+            if (categoryToUpdate == null)
                 return BadRequest("Category not found.");
-            updateCategory.CategoryName = UpdateCategory.CategoryName;
+
+            categoryToUpdate.CategoryName = categoryRequestDTO.CategoryName;
             await _context.SaveChangesAsync();
-            return Ok(await _context.category.ToListAsync());
+            return Ok(new CategoryResponseDTO
+            {
+                CategoryId = categoryToUpdate.CategoryId,
+                CategoryName = categoryToUpdate.CategoryName,
+                TodoListDTOs = categoryToUpdate.TodoLists != null
+                    ? categoryToUpdate.TodoLists.Select(t => new TodoListResponseDTO
+                    {
+                        Description = t.Description,
+                        Number = t.Number,
+                        Status = t.Status,
+                        TaskId = t.TaskId,
+                        Title = t.Title,
+                        TodoListId = t.TodoListId,
+                        UserId = t.UserId
+                    }).ToList()
+                    : new List<TodoListResponseDTO>()
+            });
 
         }
 
+        [HttpDelete("{categoryId}")]
+        public async Task<IActionResult> Delete(int categoryId)
+        {
+            var categoryToDelete = await _context.Category.FindAsync(categoryId);
+            if (categoryToDelete == null)
+                return BadRequest("Category not found.");
+
+            _context.Category.Remove(categoryToDelete);
+            await _context.SaveChangesAsync();
+            return Ok();
+
+        }
     }
 }

@@ -3,13 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using todolistsAPI.DataCntxt;
+using todolistsAPI.Data;
 
 #nullable disable
 
 namespace todolistsAPI.Migrations
 {
-    [DbContext(typeof(dataContext))]
+    [DbContext(typeof(DataContext))]
     partial class dataContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
@@ -26,17 +26,17 @@ namespace todolistsAPI.Migrations
                     b.Property<int>("CategoriesCategoryId")
                         .HasColumnType("int");
 
-                    b.Property<int>("TodoListnumber")
+                    b.Property<int>("TodoListsNumber")
                         .HasColumnType("int");
 
-                    b.HasKey("CategoriesCategoryId", "TodoListnumber");
+                    b.HasKey("CategoriesCategoryId", "TodoListsNumber");
 
-                    b.HasIndex("TodoListnumber");
+                    b.HasIndex("TodoListsNumber");
 
                     b.ToTable("CategoryTodoList");
                 });
 
-            modelBuilder.Entity("todolistsAPI.Database.Category", b =>
+            modelBuilder.Entity("todolistsAPI.Entities.Category", b =>
                 {
                     b.Property<int>("CategoryId")
                         .ValueGeneratedOnAdd()
@@ -50,20 +50,16 @@ namespace todolistsAPI.Migrations
 
                     b.HasKey("CategoryId");
 
-                    b.ToTable("category");
+                    b.ToTable("Category");
                 });
 
-            modelBuilder.Entity("todolistsAPI.Database.TodoList", b =>
+            modelBuilder.Entity("todolistsAPI.Entities.TodoList", b =>
                 {
-                    b.Property<int>("number")
+                    b.Property<int>("Number")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("number"), 1L, 1);
-
-                    b.Property<string>("CategoryName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Number"), 1L, 1);
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -86,14 +82,14 @@ namespace todolistsAPI.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
-                    b.HasKey("number");
+                    b.HasKey("Number");
 
                     b.HasIndex("UserId");
 
                     b.ToTable("TodoList");
                 });
 
-            modelBuilder.Entity("todolistsAPI.Database.Users", b =>
+            modelBuilder.Entity("todolistsAPI.Entities.User", b =>
                 {
                     b.Property<int>("UserId")
                         .ValueGeneratedOnAdd()
@@ -112,23 +108,23 @@ namespace todolistsAPI.Migrations
 
             modelBuilder.Entity("CategoryTodoList", b =>
                 {
-                    b.HasOne("todolistsAPI.Database.Category", null)
+                    b.HasOne("todolistsAPI.Entities.Category", null)
                         .WithMany()
                         .HasForeignKey("CategoriesCategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("todolistsAPI.Database.TodoList", null)
+                    b.HasOne("todolistsAPI.Entities.TodoList", null)
                         .WithMany()
-                        .HasForeignKey("TodoListnumber")
+                        .HasForeignKey("TodoListsNumber")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("todolistsAPI.Database.TodoList", b =>
+            modelBuilder.Entity("todolistsAPI.Entities.TodoList", b =>
                 {
-                    b.HasOne("todolistsAPI.Database.Users", "User")
-                        .WithMany("todoLists")
+                    b.HasOne("todolistsAPI.Entities.User", "User")
+                        .WithMany("TodoLists")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -136,9 +132,9 @@ namespace todolistsAPI.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("todolistsAPI.Database.Users", b =>
+            modelBuilder.Entity("todolistsAPI.Entities.User", b =>
                 {
-                    b.Navigation("todoLists");
+                    b.Navigation("TodoLists");
                 });
 #pragma warning restore 612, 618
         }

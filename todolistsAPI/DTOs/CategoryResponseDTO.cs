@@ -1,9 +1,12 @@
 ﻿namespace todolistsAPI.DTOs
 {
-    public class CategoryDTO
+    public class CategoryResponseDTO
     {
         public int CategoryId { get; set; }
+
         public string CategoryName { get; set; } = string.Empty;
+
+        public List<TodoListResponseDTO> TodoListDTOs { get; set; }
         
     }
 }
